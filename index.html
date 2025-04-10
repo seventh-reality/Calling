@@ -1,319 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Calling Agent</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LiveKit AI Calling Agent</title>
+  <script type="module" src="app.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .call-container {
+      border: 1px solid #ddd;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .call-controls {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    button {
+      padding: 10px 15px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #cccccc;
+    }
+    #endCallBtn {
+      background: #f44336;
+    }
+    .call-history {
+      margin-top: 30px;
+    }
+    .call-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+    }
+  </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h2 class="text-center">AI Calling Agent</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="upload-section mb-4">
-                            <h4>Upload Phone Numbers</h4>
-                            <p>Upload a CSV or Excel file with phone numbers to call</p>
-                            <form id="uploadForm">
-                                <div class="mb-3">
-                                    <input class="form-control" type="file" id="fileInput" accept=".csv,.xlsx,.xls" required>
-                                </div>
-                                <button type="submit" class="btn btn-primary" id="uploadBtn">
-                                    <span id="uploadText">Upload & Start Calling</span>
-                                    <span id="uploadSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
-                                </button>
-                            </form>
-                        </div>
-                        <div id="errorAlert" class="alert alert-danger d-none mt-3">
-    <button type="button" class="btn-close float-end" onclick="this.parentElement.classList.add('d-none')"></button>
-    <strong>Error:</strong> <span id="errorMessage"></span>
-</div>
-
-<div id="successAlert" class="alert alert-success d-none mt-3">
-    <button type="button" class="btn-close float-end" onclick="this.parentElement.classList.add('d-none')"></button>
-    <strong>Success:</strong> <span id="successMessage"></span>
-</div>
-
-                        <div class="status-section">
-                            <h4>Calling Status</h4>
-                            <div class="progress mb-3">
-                                <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="card stat-card">
-                                        <div class="card-body text-center">
-                                            <h5 class="stat-title">Total Numbers</h5>
-                                            <h2 id="totalNumbers" class="stat-value">0</h2>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="card stat-card">
-                                        <div class="card-body text-center">
-                                            <h5 class="stat-title">Completed</h5>
-                                            <h2 id="completedCalls" class="stat-value text-success">0</h2>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="card stat-card">
-                                        <div class="card-body text-center">
-                                            <h5 class="stat-title">Active</h5>
-                                            <h2 id="activeCalls" class="stat-value text-primary">0</h2>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="call-history mt-4">
-                                <h5>Recent Calls</h5>
-                                <div class="table-responsive">
-                                    <table class="table table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th>Number</th>
-                                                <th>Status</th>
-                                                <th>Time</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="callHistory">
-                                            <!-- Will be populated by JavaScript -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <h1>AI Calling Agent</h1>
+  
+  <div class="call-container">
+    <h2>Call Controls</h2>
+    <div>
+      <label for="participantId">Participant ID:</label>
+      <input type="text" id="participantId" placeholder="Enter participant ID">
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const fileInput = document.getElementById('fileInput');
-            const uploadBtn = document.getElementById('uploadBtn');
-            const uploadText = document.getElementById('uploadText');
-            const uploadSpinner = document.getElementById('uploadSpinner');
-            
-            if (!fileInput.files.length) {
-                alert('Please select a file first');
-                return;
-            }
-            
-            // Show loading state
-            uploadText.textContent = 'Processing...';
-            uploadSpinner.classList.remove('d-none');
-            uploadBtn.disabled = true;
-            
-            try {
-                const formData = new FormData();
-                formData.append('file', fileInput.files[0]);
-                
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    // Start polling for status
-                    startStatusPolling();
-                } else {
-                    alert(data.error || 'Error uploading file');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred while uploading the file');
-            } finally {
-                // Reset button state
-                uploadText.textContent = 'Upload & Start Calling';
-                uploadSpinner.classList.add('d-none');
-                uploadBtn.disabled = false;
-            }
-        });
-
-        let pollingInterval;
-        
-        function startStatusPolling() {
-            // Clear any existing interval
-            if (pollingInterval) {
-                clearInterval(pollingInterval);
-            }
-            
-            // Update immediately
-            updateStatus();
-            
-            // Then update every 2 seconds
-            pollingInterval = setInterval(updateStatus, 2000);
-        }
-        
-        async function updateStatus() {
-            try {
-                const response = await fetch('/call-status');
-                const data = await response.json();
-                
-                if (response.ok) {
-                    // Update progress
-                    document.getElementById('totalNumbers').textContent = data.total;
-                    document.getElementById('completedCalls').textContent = data.completed;
-                    document.getElementById('activeCalls').textContent = data.active;
-                    
-                    // Update progress bar
-                    const progressPercent = data.total > 0 ? 
-                        Math.round((data.completed / data.total) * 100) : 0;
-                    const progressBar = document.getElementById('progressBar');
-                    progressBar.style.width = `${progressPercent}%`;
-                    progressBar.setAttribute('aria-valuenow', progressPercent);
-                    
-                    // Update call history
-                    const historyTable = document.getElementById('callHistory');
-                    historyTable.innerHTML = data.history.map(call => `
-                        <tr>
-                            <td>${call.number}</td>
-                            <td>
-                                <span class="badge ${getStatusBadgeClass(call.status)}">
-                                    ${call.status}
-                                </span>
-                            </td>
-                            <td>${call.timestamp}</td>
-                        </tr>
-                    `).join('');
-                    
-                    // Stop polling if all calls are completed
-                    if (data.completed >= data.total && data.total > 0) {
-                        clearInterval(pollingInterval);
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching status:', error);
-            }
-        }
-        
-        function getStatusBadgeClass(status) {
-            switch(status) {
-                case 'completed':
-                    return 'bg-success';
-                case 'in-progress':
-                    return 'bg-primary';
-                case 'failed':
-                    return 'bg-danger';
-                default:
-                    return 'bg-secondary';
-            }
-        }
-        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
     
-    const fileInput = document.getElementById('fileInput');
-    const uploadBtn = document.getElementById('uploadBtn');
-    const uploadText = document.getElementById('uploadText');
-    const uploadSpinner = document.getElementById('uploadSpinner');
-    const errorAlert = document.getElementById('errorAlert');
+    <div class="call-controls">
+      <button id="startCallBtn">Start Call</button>
+      <button id="endCallBtn" disabled>End Call</button>
+    </div>
     
-    if (!fileInput.files.length) {
-        showError('Please select a file first');
-        return;
-    }
-    
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (fileInput.files[0].size > maxSize) {
-        showError('File size too large. Maximum allowed is 5MB.');
-        return;
-    }
-    
-    // Show loading state
-    uploadText.textContent = 'Processing...';
-    uploadSpinner.classList.remove('d-none');
-    uploadBtn.disabled = true;
-    errorAlert.classList.add('d-none');
-    
-    try {
-        const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
-        
-        const response = await fetch('/upload', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-            // Handle different error types
-            if (data.error === 'No phone number column found') {
-                showError(`
-                    ${data.error}.<br>
-                    <strong>Suggested column names:</strong> ${data.suggested_columns.join(', ')}<br>
-                    <strong>Found columns:</strong> ${data.found_columns.join(', ')}
-                `, true);
-            } else if (data.error === 'Invalid file type') {
-                showError(`
-                    ${data.error}.<br>
-                    <strong>Allowed types:</strong> ${data.allowed_types.join(', ')}
-                `, true);
-            } else {
-                showError(data.error || 'Error uploading file');
-            }
-            return;
-        }
-        
-        // Show success message
-        showSuccess(`
-            ${data.message}<br>
-            <small>Sample numbers: ${data.sample_numbers.join(', ')}...</small>
-        `);
-        
-        // Start polling for status
-        startStatusPolling();
-        
-    } catch (error) {
-        console.error('Error:', error);
-        showError('An unexpected error occurred. Please try again.');
-    } finally {
-        // Reset button state
-        uploadText.textContent = 'Upload & Start Calling';
-        uploadSpinner.classList.add('d-none');
-        uploadBtn.disabled = false;
-    }
-});
-
-function showError(message, isHtml = false) {
-    const errorAlert = document.getElementById('errorAlert');
-    const errorMessage = document.getElementById('errorMessage');
-    
-    if (isHtml) {
-        errorMessage.innerHTML = message;
-    } else {
-        errorMessage.textContent = message;
-    }
-    
-    errorAlert.classList.remove('d-none');
-}
-
-function showSuccess(message) {
-    const successAlert = document.getElementById('successAlert');
-    const successMessage = document.getElementById('successMessage');
-    
-    successMessage.innerHTML = message;
-    successAlert.classList.remove('d-none');
-    
-    // Hide after 5 seconds
-    setTimeout(() => {
-        successAlert.classList.add('d-none');
-    }, 5000);
-}
-    </script>
+    <div id="callStatus">Status: Ready</div>
+  </div>
+  
+  <div class="call-history">
+    <h2>Call History</h2>
+    <div id="historyList">
+      <!-- Call history will be populated here -->
+    </div>
+  </div>
 </body>
 </html>
