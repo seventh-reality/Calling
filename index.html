@@ -29,6 +29,15 @@
                                 </button>
                             </form>
                         </div>
+                        <div id="errorAlert" class="alert alert-danger d-none mt-3">
+    <button type="button" class="btn-close float-end" onclick="this.parentElement.classList.add('d-none')"></button>
+    <strong>Error:</strong> <span id="errorMessage"></span>
+</div>
+
+<div id="successAlert" class="alert alert-success d-none mt-3">
+    <button type="button" class="btn-close float-end" onclick="this.parentElement.classList.add('d-none')"></button>
+    <strong>Success:</strong> <span id="successMessage"></span>
+</div>
 
                         <div class="status-section">
                             <h4>Calling Status</h4>
