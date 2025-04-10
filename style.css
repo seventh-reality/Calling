@@ -1,0 +1,50 @@
+body {
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.card {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+}
+
+.stat-card {
+    transition: transform 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-title {
+    font-size: 1rem;
+    color: #6c757d;
+}
+
+.stat-value {
+    font-weight: 700;
+}
+
+.progress {
+    height: 10px;
+}
+
+.upload-section {
+    padding: 20px;
+    background-color: #f1f8ff;
+    border-radius: 8px;
+}
+
+#callHistory tr:first-child {
+    font-weight: bold;
+    background-color: #e9ecef;
+}
+
+.badge {
+    font-size: 0.8rem;
+    padding: 0.35em 0.65em;
+}
