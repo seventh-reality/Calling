@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Calling Status</title>
+    <script>
+        function updateStatus() {
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total').textContent = data.total;
+                    document.getElementById('completed').textContent = data.completed;
+                    document.getElementById('active').textContent = data.active;
+                    
+                    if (data.completed < data.total) {
+                        setTimeout(updateStatus, 2000);
+                    }
+                });
+        }
+        
+        // Start updating status
+        window.onload = updateStatus;
+    </script>
+</head>
+<body>
+    <h1>Calling Status</h1>
+    <p>Total numbers: <span id="total">{{ total_calls }}</span></p>
+    <p>Completed calls: <span id="completed">{{ completed_calls }}</span></p>
+    <p>Active calls: <span id="active">0</span></p>
+</body>
+</html>
