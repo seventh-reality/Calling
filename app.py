@@ -196,6 +196,90 @@ def process_call_queue():
                 'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
             })
             continue
+            @app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part in the request'}), 400
+    
+    file = request.files['file']
+    
+    # Check if file is empty
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    # Check file extension
+    allowed_extensions = {'csv', 'xlsx', 'xls'}
+    if not ('.' in file.filename and 
+            file.filename.rsplit('.', 1)[1].lower() in allowed_extensions):
+        return jsonify({
+            'error': 'Invalid file type. Please upload CSV or Excel files only.',
+            'allowed_types': list(allowed_extensions)
+        }), 400
+    
+    try:
+        # Read the file based on extension
+        if file.filename.lower().endswith('.csv'):
+            # For CSV, try different encodings if needed
+            try:
+                df = pd.read_csv(file)
+            except UnicodeDecodeError:
+                file.stream.seek(0)  # Reset file pointer
+                df = pd.read_csv(file, encoding='latin1')
+        else:  # Excel files
+            df = pd.read_excel(file)
+        
+        # Find phone number column (case insensitive)
+        phone_col = None
+        possible_columns = ['phone', 'number', 'phonenumber', 'mobile', 'contact']
+        
+        for col in df.columns:
+            col_lower = col.strip().lower()
+            for possible in possible_columns:
+                if possible in col_lower:
+                    phone_col = col
+                    break
+            if phone_col:
+                break
+        
+        if not phone_col:
+            return jsonify({
+                'error': 'No phone number column found. Please include a column with one of these names:',
+                'suggested_columns': possible_columns,
+                'found_columns': list(df.columns)
+            }), 400
+        
+        # Clean and validate phone numbers
+        df[phone_col] = df[phone_col].astype(str).str.strip()
+        df = df[df[phone_col].str.match(r'^\+?[\d\s\-\(\)]{7,}$')]  # Basic phone number validation
+        
+        if len(df) == 0:
+            return jsonify({
+                'error': 'No valid phone numbers found after validation',
+                'validation_regex': r'^\+?[\d\s\-\(\)]{7,}$'
+            }), 400
+        
+        global call_queue
+        call_queue = df[phone_col].tolist()
+        
+        # Start calling process in background
+        Thread(target=process_call_queue, daemon=True).start()
+        
+        return jsonify({
+            'message': f'Successfully processed {len(call_queue)} valid phone numbers',
+            'total_numbers': len(call_queue),
+            'sample_numbers': call_queue[:3]  # Show first 3 as sample
+        })
+    
+    except pd.errors.EmptyDataError:
+        return jsonify({'error': 'The file is empty'}), 400
+    except pd.errors.ParserError:
+        return jsonify({'error': 'Error parsing the file. Please check the file format.'}), 400
+    except Exception as e:
+        logger.error(f"File processing error: {str(e)}", exc_info=True)
+        return jsonify({
+            'error': f'An error occurred while processing the file: {str(e)}',
+            'type': type(e).__name__
+        }), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
