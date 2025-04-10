@@ -283,3 +283,51 @@ def upload_file():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+    def process_call_queue():
+    """Process the call queue and initiate calls"""
+    global call_queue, active_calls
+    
+    for number in call_queue:
+        try:
+            # Clean the number - keep only digits and +
+            cleaned_number = ''.join(c for c in str(number) if c.isdigit() or c == '+')
+            
+            # Add country code if missing (example for US)
+            if not cleaned_number.startswith('+'):
+                cleaned_number = f'+1{cleaned_number}'  # Default to US
+                logger.warning(f"Added default country code to {number}")
+            
+            # Validate E.164 format
+            if not re.match(r'^\+\d{10,15}$', cleaned_number):
+                logger.error(f"Invalid number format: {cleaned_number}")
+                continue
+                
+            # Make the call
+            call = client.calls.create(
+                twiml=f'<Response><Say>Hello, this is an AI calling agent.</Say></Response>',
+                to=cleaned_number,
+                from_=twilio_number,
+                status_callback=url_for('call_status_callback', _external=True),
+                status_callback_event=['initiated', 'ringing', 'answered', 'completed', 'failed', 'busy', 'no-answer']
+            )
+            
+            # Track the call
+            active_calls[call.sid] = 'initiated'
+            call_history.append({
+                'number': cleaned_number,
+                'status': 'initiated',
+                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+            })
+            
+            # Add delay between calls (compliance friendly)
+            time.sleep(5)  # 5 seconds between calls
+            
+        except Exception as e:
+            logger.error(f"Error calling {number}: {str(e)}")
+            call_history.append({
+                'number': number,
+                'status': 'failed',
+                'error': str(e),
+                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+            })
+            continue
