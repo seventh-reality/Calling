@@ -1,15 +1,76 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calling Status</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Calling Status</h1>
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h5>Total Numbers</h5>
+                        <h2 id="totalNumbers">0</h2>
+                    </div>
+                    <div class="col-md-4">
+                        <h5>Completed Calls</h5>
+                        <h2 id="completedCalls">0</h2>
+                    </div>
+                    <div class="col-md-4">
+                        <h5>Active Calls</h5>
+                        <h2 id="activeCalls">0</h2>
+                    </div>
+                </div>
+                <div class="progress mt-3">
+                    <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <h3>Recent Calls</h3>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Number</th>
+                        <th>Status</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody id="callHistory">
+                    <!-- Will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <script>
         function updateStatus() {
-            fetch('/status')
+            fetch('/call-status')
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById('total').textContent = data.total;
-                    document.getElementById('completed').textContent = data.completed;
-                    document.getElementById('active').textContent = data.active;
+                    document.getElementById('totalNumbers').textContent = data.total;
+                    document.getElementById('completedCalls').textContent = data.completed;
+                    document.getElementById('activeCalls').textContent = data.active;
+                    
+                    // Update progress bar
+                    const progressPercent = data.total > 0 ? 
+                        Math.round((data.completed / data.total) * 100) : 0;
+                    document.getElementById('progressBar').style.width = `${progressPercent}%`;
+                    
+                    // Update call history
+                    const historyTable = document.getElementById('callHistory');
+                    historyTable.innerHTML = data.history.map(call => `
+                        <tr>
+                            <td>${call.number}</td>
+                            <td>${call.status}</td>
+                            <td>${call.timestamp}</td>
+                        </tr>
+                    `).join('');
                     
                     if (data.completed < data.total) {
                         setTimeout(updateStatus, 2000);
@@ -20,11 +81,5 @@
         // Start updating status
         window.onload = updateStatus;
     </script>
-</head>
-<body>
-    <h1>Calling Status</h1>
-    <p>Total numbers: <span id="total">{{ total_calls }}</span></p>
-    <p>Completed calls: <span id="completed">{{ completed_calls }}</span></p>
-    <p>Active calls: <span id="active">0</span></p>
 </body>
 </html>
